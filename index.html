@@ -5,189 +5,247 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tic Tac Toe Ultra 🎯</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    /* --- Reset & Basic Setup --- */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; /* Remove blue tap highlight */ }
+    html { scroll-behavior: smooth; }
     body {
       background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
       min-height: 100vh;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      transition: background 0.3s ease;
-      overflow: hidden; /* Prevent scrollbars during intro/transitions */
+      justify-content: center; /* Centering done by .game-ready */
+      align-items: flex-start; /* Align top for scrolling */
+      padding: 20px 10px; /* Reduced horizontal padding slightly */
+      transition: background 0.4s ease, color 0.4s ease;
+      overflow-x: hidden;
+      overflow-y: auto;
+      line-height: 1.5;
     }
-    body.game-ready {
-        display: flex; /* Re-enable flex centering after intro */
-        overflow: auto; /* Allow scroll if content overflows */
+    body.game-ready { display: flex; align-items: center; /* Re-enable vertical center when ready */ }
+    body.dark {
+        background: linear-gradient(135deg, #2c3e50, #4ca1af);
+        color: #f0f0f0; /* Slightly softer white */
+        /* ADDED subtle text shadow for better contrast on gradient */
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
     }
-    .dark {
-      background: linear-gradient(135deg, #2c3e50, #4ca1af);
-      color: white;
-    }
+/* --- Intro Screen Styling --- */
+#introScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%); z-index: 1000; transition: opacity 1s ease-out; }
+#introText { font-size: clamp(1.8rem, 7vw, 3rem); font-weight: bold; color: black; margin-bottom: 30px; display: flex; white-space: pre; text-align: center; flex-wrap: wrap; justify-content: center; line-height: 1.2; padding: 0 10px; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); /* Added subtle shadow for light mode too */ }
+#introText span { display: inline-block; opacity: 0; transform: translateY(25px) rotate(-5deg) scale(0.9); animation: revealChar 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+#introText span:nth-child(1) { animation-delay: calc(1 * 0.06s); } #introText span:nth-child(2) { animation-delay: calc(2 * 0.06s); } #introText span:nth-child(3) { animation-delay: calc(3 * 0.06s); } #introText span:nth-child(4) { animation-delay: calc(4 * 0.06s); } #introText span:nth-child(5) { animation-delay: calc(5 * 0.06s); } #introText span:nth-child(6) { animation-delay: calc(6 * 0.06s); } #introText span:nth-child(7) { animation-delay: calc(7 * 0.06s); } #introText span:nth-child(8) { animation-delay: calc(8 * 0.06s); } #introText span:nth-child(9) { animation-delay: calc(9 * 0.06s); } #introText span:nth-child(10) { animation-delay: calc(10 * 0.06s); } #introText span:nth-child(11) { animation-delay: calc(11 * 0.06s); } #introText span:nth-child(12) { animation-delay: calc(12 * 0.06s); } #introText span:nth-child(13) { animation-delay: calc(13 * 0.06s); } #introText span:nth-child(14) { animation-delay: calc(14 * 0.06s); }
+@keyframes revealChar { to { opacity: 1; transform: translateY(0) rotate(0deg) scale(1); } }
+#loader { width: 40px; height: 40px; position: relative; }
+.spinner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; border: 5px solid rgba(0, 0, 0, 0.1); border-top-color: black; animation: spin 1s linear infinite; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+@keyframes spin { to { transform: rotate(360deg); } }
+body.dark #introScreen { background: linear-gradient(135deg, #2c3e50, #4ca1af); }
+body.dark #introText { color: #eee; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7); } /* Added text shadow */
+body.dark .spinner { border-color: rgba(255, 255, 255, 0.15); border-top-color: #eee; box-shadow: 0 0 10px rgba(255,255,255,0.1); }
 
-    /* --- Intro Screen Styling --- */
-    #introScreen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
-      z-index: 1000;
-      transition: opacity 1s ease-out;
-    }
+/* --- Main Game Styles --- */
+.container { flex-direction: column; align-items: center; text-align: center; width: 100%; max-width: 500px; /* Slightly wider max */ position: relative; padding-bottom: 20px; }
+h1 { font-size: clamp(2rem, 8vw, 2.5rem); margin-bottom: 10px; text-shadow: 2px 2px 5px rgba(0,0,0,0.4); }
+h2 { font-size: clamp(1.3rem, 5vw, 1.5rem); margin-bottom: 15px; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
+/* body.dark h2 inherits text-shadow from body.dark */
 
-    /* --- Text Animation (Staggered Reveal) --- */
-    #introText {
-      font-size: 3rem;
-      font-weight: bold;
-      color: black;
-      margin-bottom: 30px;
-      display: flex;
-      white-space: pre;
-    }
-    #introText span {
-      display: inline-block;
-      opacity: 0;
-      transform: translateY(20px);
-      animation: revealChar 0.6s cubic-bezier(0.215, 0.610, 0.355, 1.000) forwards;
-    }
-    /* Staggered delays */
-    #introText span:nth-child(1) { animation-delay: calc(1 * 0.06s); }
-    #introText span:nth-child(2) { animation-delay: calc(2 * 0.06s); }
-    #introText span:nth-child(3) { animation-delay: calc(3 * 0.06s); }
-    #introText span:nth-child(4) { animation-delay: calc(4 * 0.06s); }
-    #introText span:nth-child(5) { animation-delay: calc(5 * 0.06s); }
-    #introText span:nth-child(6) { animation-delay: calc(6 * 0.06s); }
-    #introText span:nth-child(7) { animation-delay: calc(7 * 0.06s); }
-    #introText span:nth-child(8) { animation-delay: calc(8 * 0.06s); }
-    #introText span:nth-child(9) { animation-delay: calc(9 * 0.06s); }
-    #introText span:nth-child(10) { animation-delay: calc(10 * 0.06s); }
-    #introText span:nth-child(11) { animation-delay: calc(11 * 0.06s); }
-    #introText span:nth-child(12) { animation-delay: calc(12 * 0.06s); }
-    #introText span:nth-child(13) { animation-delay: calc(13 * 0.06s); }
-    #introText span:nth-child(14) { animation-delay: calc(14 * 0.06s); }
+/* --- View Transition Styles --- */
+.input-section, .mode-selection, .difficulty-selection, .gameArea-container { width: 100%; display: flex; flex-direction: column; align-items: center; opacity: 0; transform: translateY(30px) scale(0.97); transition: opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); min-height: 280px; margin-bottom: 20px; padding-top: 20px; }
+.input-section.active-view, .mode-selection.active-view, .difficulty-selection.active-view, .gameArea-container.active-view { opacity: 1; transform: translateY(0) scale(1); }
 
-    @keyframes revealChar {
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    /* --- End Text Animation --- */
+.input-section input { padding: 12px 25px; /* Slightly larger padding */ width: 85%; max-width: 320px; border: 2px solid #fff; border-radius: 50px; outline: none; text-align: center; font-size: 1.1rem; margin-bottom: 15px; background: rgba(255, 255, 255, 0.8); color: #333; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+.input-section input::placeholder { color: #666; }
+body.dark .input-section input { background: rgba(0, 0, 0, 0.4); /* Slightly darker */ color: #eee; border-color: #888; box-shadow: inset 0 1px 3px rgba(255,255,255,0.05); text-shadow: none; /* Remove shadow from input text */ }
+body.dark .input-section input::placeholder { color: #bbb; }
 
+/* --- Buttons --- */
+.btn { padding: 12px 22px; /* Increased padding */ margin: 6px 8px; font-size: clamp(1rem, 4vw, 1.1rem); border: 2px solid #fff; border-radius: 50px; background: transparent; color: #fff; cursor: pointer; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.1s ease-out; font-weight: bold; min-width: 110px; display: inline-block; text-decoration: none; box-shadow: 0 2px 5px rgba(0,0,0,0.1); user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; line-height: 1.3; /* Ensure text vertical center */ text-shadow: 0 1px 1px rgba(0,0,0,0.3); /* Subtle shadow for light mode too */ }
+.btn:hover { background: #fff; color: #333; transform: scale(1.05) translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.15); text-shadow: none; }
+.btn:active { transform: scale(0.95) translateY(0px); box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition-duration: 0.05s; }
+body.dark .btn {
+    border-color: #ccc;
+    color: #ddd; /* Slightly brighter */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Adjusted shadow for dark */
+    /* ADDED text shadow for dark mode buttons */
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+body.dark .btn:hover { background: #ccc; color: #2c3e50; transform: scale(1.05) translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.3); text-shadow: none; } /* Adjusted shadow */
+body.dark .btn:active { transform: scale(0.95) translateY(0px); box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition-duration: 0.05s; } /* Adjusted shadow */
+.difficulty-selection .btn { min-width: 100px; padding: 10px 18px; } /* Slightly smaller difficulty buttons */
+.back-btn { background-color: rgba(0,0,0,0.05); }
+body.dark .back-btn { background-color: rgba(0,0,0,0.2); } /* Slightly darker */
 
-    /* --- Rounded Arc Loader --- */
-    #loader { width: 40px; height: 40px; position: relative; }
-    .spinner {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      border-radius: 50%;
-      border: 5px solid rgba(0, 0, 0, 0.1);
-      border-top-color: black;
-      animation: spin 1s linear infinite;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    /* --- End Loader --- */
+/* --- Board and Game Area --- */
+/* Responsive Board using clamp() */
+.board {
+    display: grid;
+    /* Cell size: min 65px, preferred 22vw, max 100px */
+    --cell-size: clamp(65px, 22vw, 100px);
+    /* Gap size: min 8px, preferred 2.5vw, max 12px */
+    --gap-size: clamp(8px, 2.5vw, 12px);
+    grid-template-columns: repeat(3, var(--cell-size));
+    grid-template-rows: repeat(3, var(--cell-size));
+    gap: var(--gap-size);
+    justify-content: center;
+    margin-top: 25px; /* Increased margin */
+}
+.cell {
+    background: rgba(255, 255, 255, 0.85);
+    border: 3px solid #fff;
+    border-radius: 15px;
+    /* Font size relative to cell size */
+    font-size: calc(var(--cell-size) * 0.5);
+    font-weight: bold;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.15s ease-out, background-color 0.2s ease, box-shadow 0.2s ease;
+    color: #333;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+    line-height: 1; /* Ensure text is centered vertically */
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.1); /* Subtle shadow for X/O */
+}
+.cell:hover { transform: scale(1.03); box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+.cell:active { transform: scale(0.92); transition-duration: 0.05s; }
+.cell.disabled { pointer-events: none; /* Keep disabled cells non-interactive */ }
+.cell.X { color: #E91E63; }
+.cell.O { color: #2196F3; }
+body.dark .cell {
+    background: rgba(0, 0, 0, 0.45); /* Slightly darker */
+    border-color: #aaa;
+    color: #eee; /* Cell base color - overridden by X/O */
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.2); /* Adjusted shadow */
+    /* Text shadow for X/O in dark mode */
+    text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+}
+body.dark .cell:hover { box-shadow: 0 0 15px rgba(255,255,255,0.1); }
+/* Keep X/O colors bright, shadow helps contrast */
+body.dark .cell.X { color: #ff80ab; }
+body.dark .cell.O { color: #80d8ff; }
 
-    /* --- Dark Mode Intro Adjustments --- */
-    body.dark #introScreen { background: linear-gradient(135deg, #2c3e50, #4ca1af); }
-    body.dark #introText { color: #eee; }
-    body.dark .spinner { border-color: rgba(255, 255, 255, 0.15); border-top-color: #eee; box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+/* Animation for Cell Mark (X/O) */
+@keyframes scaleIn { from { transform: scale(0.3) rotate(-15deg); opacity: 0; } to { transform: scale(1) rotate(0deg); opacity: 1; } }
+.cell-marked { animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
-
-    /* --- Main Game Styles --- */
-    .container {
-        text-align: center;
-        width: 100%;
-        max-width: 400px;
-        flex-direction: column;
-        align-items: center;
-        position: relative; /* Needed if view transitions use absolute */
-        overflow: hidden; /* Hide views sliding out */
-    }
-    h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 2px 2px 5px rgba(0,0,0,0.4); }
-
-    /* --- View Transition Styles --- */
-    .input-section,
-    .mode-selection,
-    .gameArea-container /* Target the wrapper */
-    {
-        width: 100%; /* Ensure they take width for centering */
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        opacity: 0;
-        transform: translateY(20px); /* Start slightly below */
-        transition: opacity 0.4s ease-out, transform 0.4s ease-out;
-        /* Uncomment below for absolute positioning overlay effect */
-        /* position: absolute; */
-        /* top: 0; */
-        /* left: 0; */
-        /* padding-top: 50px; Add padding if views overlap header */
-    }
-
-    .input-section.active-view,
-    .mode-selection.active-view,
-    .gameArea-container.active-view {
-        opacity: 1;
-        transform: translateY(0);
-        /* position: relative; or static, depends on layout */
-    }
-    /* --- End View Transition Styles --- */
+.hidden { display: none !important; visibility: hidden; opacity: 0; }
+.message {
+    margin-top: 25px;
+    margin-bottom: 10px;
+    font-weight: bold;
+    font-size: clamp(1.2rem, 4.5vw, 1.4rem);
+    min-height: 1.4em;
+    padding: 5px 10px; /* Add padding */
+    border-radius: 8px; /* Rounded corners */
+    transition: background-color 0.3s ease;
+    /* Message inherits text-shadow from body.dark */
+}
+body.dark .message {
+    background-color: rgba(0, 0, 0, 0.2); /* Add subtle background in dark mode */
+}
 
 
-    .input-section input { padding: 10px 20px; width: 80%; border: 2px solid #fff; border-radius: 50px; outline: none; text-align: center; font-size: 1.1rem; margin-bottom: 10px; background: rgba(255, 255, 255, 0.8); color: #333; }
-    .input-section input::placeholder { color: #666; }
-    body.dark .input-section input { background: rgba(0, 0, 0, 0.3); color: #eee; border-color: #888; }
-    body.dark .input-section input::placeholder { color: #bbb; }
+/* --- Scoreboard --- */
+.scoreboard {
+    display: flex;
+    justify-content: space-evenly; /* Even space */
+    align-items: center;
+    width: 100%;
+    margin-top: 25px;
+    font-weight: bold;
+    flex-wrap: wrap; /* Allow wrapping on very small screens */
+    gap: 10px; /* Gap between items */
+    font-size: clamp(0.9rem, 3.5vw, 1rem);
+    /* Scoreboard items inherit text-shadow from body.dark */
+}
+.score-item {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Gap between icon/name and score */
+    padding: 5px 10px;
+    border-radius: 20px;
+    background-color: rgba(255, 255, 255, 0.15); /* Slightly more opaque */
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    min-width: 80px; /* Minimum width */
+    justify-content: center;
+}
+.score-item span:first-child { /* Icon/Name */
+    opacity: 0.9; /* Slightly more visible */
+}
+.score-item span:last-child { /* Score */
+   font-weight: 700; /* Bolder score */
+}
+body.dark .score-item {
+     background-color: rgba(0, 0, 0, 0.25); /* MODIFIED: Darker background */
+     /* Inherits text-shadow */
+}
 
-    .btn { padding: 10px 20px; margin: 5px; font-size: 1.1rem; border: 2px solid #fff; border-radius: 50px; background: transparent; color: #fff; cursor: pointer; transition: 0.3s ease; font-weight: bold; min-width: 120px; }
-    .btn:hover { background: #fff; color: #333; transform: scale(1.05); }
-    body.dark .btn { border-color: #ccc; color: #ccc; }
-    body.dark .btn:hover { background: #ccc; color: #2c3e50; }
+/* Highlight for current player's score */
+@keyframes scorePulse {
+    0%, 100% { background-color: rgba(255, 255, 255, 0.25); transform: scale(1); } /* More opaque */
+    50% { background-color: rgba(255, 255, 255, 0.4); transform: scale(1.03); }
+}
+body.dark @keyframes scorePulse {
+    0%, 100% { background-color: rgba(0, 0, 0, 0.3); transform: scale(1); } /* MODIFIED: Darker pulse */
+    50% { background-color: rgba(0, 0, 0, 0.45); transform: scale(1.03); }
+}
+.score-item.active-score {
+    animation: scorePulse 1.5s ease-in-out infinite;
+}
 
-    /* Remove margin-top from mode-selection if handled by transitions/container */
-    /* .mode-selection { display: flex; flex-direction: column; margin-top: 20px;} */
+.controls { margin-top: 35px; display: flex; flex-wrap: wrap; justify-content: center; width: 100%; gap: 10px; }
 
-    .board { display: grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); gap: 12px; justify-content: center; margin-top: 20px; }
-    .cell { background: rgba(255, 255, 255, 0.85); border: 3px solid #fff; border-radius: 15px; font-size: 2.5rem; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s ease; color: #333; }
-    .cell:active { transform: scale(0.95); }
-    .cell.disabled { pointer-events: none; }
-    .cell.X { color: #E91E63; }
-    .cell.O { color: #2196F3; }
-    body.dark .cell { background: rgba(0, 0, 0, 0.4); border-color: #aaa; color: #eee; }
-    body.dark .cell.X { color: #ff80ab; }
-    body.dark .cell.O { color: #80d8ff; }
+/* --- About Us Section --- */
+.about-section { margin-top: 30px; text-align: center; width: 100%; padding: 0 10px; }
+#aboutToggle { min-width: 100px !important; }
+#aboutInfo { margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.2); border-radius: 8px; line-height: 1.7; font-size: 0.95rem; transition: background 0.3s ease; max-width: 90%; margin-left: auto; margin-right: auto; color: #333; word-wrap: break-word; }
+#aboutInfo p { margin-bottom: 8px; }
+#aboutInfo strong { font-weight: 600; }
+#aboutInfo a { color: #1a0dab; text-decoration: underline; font-weight: bold; word-break: break-all; } /* Added word-break */
+#aboutInfo a:hover { opacity: 0.8; }
+body.dark #aboutInfo {
+    background: rgba(0, 0, 0, 0.4); /* Darker background */
+    color: #eee;
+    /* Inherits text-shadow */
+}
+body.dark #aboutInfo a { color: #87CEFA; /* Light Sky Blue */ text-shadow: none; } /* Remove shadow from links */
+body.dark #aboutInfo a:hover { color: #ADD8E6; } /* Lighter blue */
 
-    .hidden { display: none !important; visibility: hidden; opacity: 0; }
-    .message { margin-top: 20px; /* Add margin if not inside gameArea-container */ margin-bottom: 10px; font-weight: bold; font-size: 1.4rem; min-height: 1.4em; }
-    .scoreboard { display: flex; justify-content: space-around; width: 100%; margin-top: 20px; /* Add margin if not inside gameArea-container */ font-weight: bold; }
-    .controls { margin-top: 30px; display: flex; flex-wrap: wrap; justify-content: center; width: 100%; }
-    @keyframes winnerGlow { 0% { background-color: inherit; } 50% { background-color: #8eff8e; } 100% { background-color: inherit; } }
-    @keyframes bounce { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-    @media (max-width: 500px) {
-      .board { grid-template-columns: repeat(3, 80px); grid-template-rows: repeat(3, 80px); gap: 8px; }
-      .cell { font-size: 2rem; border-radius: 10px; border-width: 2px; }
-      h1 { font-size: 2rem; }
-      #introText { font-size: 2.5rem; margin-bottom: 25px; }
-      #loader { width: 35px; height: 35px; }
-      .spinner { border-width: 4px; }
-      .btn { font-size: 1rem; padding: 8px 15px; min-width: 100px; }
-    }
-    .dark-mode-btn { position: absolute; top: 20px; right: 20px; font-size: 1.3rem; background: none; border: none; color: #fff; cursor: pointer; transition: 0.3s ease; z-index: 1001; }
-    body.dark .dark-mode-btn { color: #eee; }
-    .dark-mode-btn:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.1); }
-    body.dark .dark-mode-btn:hover { background: rgba(0, 0, 0, 0.3); }
-    .brick { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); background-color: #ff6347; color: white; padding: 15px; border-radius: 10px; font-size: 1.2rem; font-weight: bold; display: none; animation: floatBrick 2.5s ease forwards; z-index: 900; }
-    @keyframes floatBrick { 0% { transform: translateX(-50%) translateY(0); opacity: 1; } 100% { transform: translateX(-50%) translateY(-20px); opacity: 0; } }
+/* --- Animations --- */
+@keyframes winnerGlow { 0% { background-color: inherit; box-shadow: 0 0 5px rgba(142, 255, 142, 0.5); } 50% { background-color: rgba(142, 255, 142, 0.6); box-shadow: 0 0 20px rgba(142, 255, 142, 1); } 100% { background-color: inherit; box-shadow: 0 0 5px rgba(142, 255, 142, 0.5); } }
+body.dark @keyframes winnerGlow { 0% { background-color: inherit; box-shadow: 0 0 5px rgba(56, 142, 60, 0.6); } 50% { background-color: rgba(56, 142, 60, 0.5); box-shadow: 0 0 20px rgba(56, 142, 60, 1); } 100% { background-color: inherit; box-shadow: 0 0 5px rgba(56, 142, 60, 0.6); } }
+@keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+.brick { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background-color: #ff6347; color: white; padding: 15px; border-radius: 10px; font-size: 1.2rem; font-weight: bold; display: none; animation: floatBrick 2.5s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards; z-index: 900; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+@keyframes floatBrick { 0% { transform: translateX(-50%) translateY(0) scale(0.8); opacity: 0; } 20% { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; } 100% { transform: translateX(-50%) translateY(-30px) scale(0.9); opacity: 0; } }
+
+/* --- Responsive (Simplified as clamp handles much of it) --- */
+@media (max-width: 360px) { /* Adjustments for very small screens */
+  .btn { padding: 10px 15px; min-width: 80px; font-size: 0.9rem;}
+  .difficulty-selection .btn { padding: 8px 12px; }
+  h1 { font-size: 1.8rem; }
+  h2 { font-size: 1.1rem; }
+  .message { font-size: 1rem; }
+  .scoreboard { font-size: 0.8rem; gap: 5px; }
+  .score-item { gap: 5px; padding: 4px 8px; min-width: 70px; }
+  #introText { font-size: 1.5rem; }
+}
+
+/* --- Dark Mode Slider --- */
+.dark-mode-slider-container { position: fixed; top: 20px; right: 15px; z-index: 1001; }
+.switch { position: relative; display: inline-block; width: 46px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ABD9E9; transition: background-color 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); overflow: hidden; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.4s ease; z-index: 2; }
+input:checked + .slider { background-color: #3b5266; } /* Slightly lighter dark slider bg */
+input:focus + .slider { box-shadow: 0 0 2px #4ca1af; }
+input:checked + .slider:before { transform: translateX(22px); }
+.slider.round { border-radius: 24px; }
+.slider.round:before { border-radius: 50%; }
+.emoji { position: absolute; top: 50%; transform: translateY(-50%); font-size: 12px; z-index: 1; transition: opacity 0.4s ease; color: #fff; text-shadow: 0 0 2px rgba(0,0,0,0.5); }
+.sun { left: 5px; opacity: 1; }
+.moon { right: 5px; opacity: 0; }
+input:checked + .slider .sun { opacity: 0; }
+input:checked + .slider .moon { opacity: 1; }
+
   </style>
 </head>
 <body>
-
 <!-- Intro Screen -->
 <div id="introScreen">
   <h1 id="introText">
@@ -195,53 +253,93 @@
   </h1>
   <div id="loader"><div class="spinner"></div></div>
 </div>
-
-<button class="dark-mode-btn" onclick="toggleDarkMode()">🌙</button>
-
-<div class="brick" id="brick">Made by Subham</div>
-
-<!-- Main Game Container -->
+<!-- Dark Mode Slider Toggle -->
+<div class="dark-mode-slider-container">
+    <label class="switch" for="darkModeToggle">
+        <input type="checkbox" id="darkModeToggle">
+        <span class="slider round">
+            <span class="emoji sun">☀️</span>
+            <span class="emoji moon">🌙</span>
+        </span>
+    </label>
+</div>
+<!-- End Dark Mode Slider Toggle -->
+<div class="brick" id="brick">Made by Subham</div> <!-- HTML for the popup remains, but it won't be shown by the JS -->
+<!-- Main Container (Holds Views and About Us) -->
 <div class="container hidden"> <!-- Container is initially hidden -->
   <h1>Tic Tac Toe 🎯</h1>
-
   <!-- Name Input View -->
-  <div class="input-section hidden" id="nameInputSection"> <!-- Start hidden, use JS to show -->
-    <input type="text" id="playerName" placeholder="Enter Your Name..." />
-    <button class="btn" onclick="proceedToMode()">Next ➡️</button>
+  <div class="input-section hidden" id="nameInputSection">
+    <h2>Enter Your Name</h2>
+    <input type="text" id="playerName" placeholder="Player Name..." />
+    <button class="btn" onclick="handleButtonClick(proceedToMode)">Next ➡️</button>
   </div>
-
   <!-- Mode Selection View -->
-  <div class="mode-selection hidden" id="modeSelection"> <!-- Start hidden -->
-    <button class="btn" onclick="selectMode('player')">👥 Player vs Player</button>
-    <button class="btn" onclick="selectMode('bot')">🤖 Player vs Heera Bete</button>
+  <div class="mode-selection hidden" id="modeSelection">
+    <h2>Choose Game Mode</h2>
+    <button class="btn" onclick="handleButtonClick(() => selectMode('player'))">👥 Player vs Player</button>
+    <button class="btn" onclick="handleButtonClick(() => selectMode('bot'))">🤖 Player vs Heera Bete</button>
+    <button class="btn back-btn" onclick="handleButtonClick(goBackToNameInput)">⬅️ Back</button>
   </div>
-
-  <!-- Game Screen View (Wrapper for Scoreboard and Game Area) -->
-  <div class="gameArea-container hidden" id="gameScreen"> <!-- Start hidden -->
-      <div class="scoreboard" id="scoreboard"> <!-- No hidden class -->
-        <div id="playerX">X: 0</div>
-        <div id="playerO">O: 0</div>
-        <div id="draws">Draws: 0</div>
+  <!-- Difficulty Selection View -->
+  <div class="difficulty-selection hidden" id="difficultySelection">
+      <h2>Choose Heera Bete Difficulty</h2>
+      <button class="btn" onclick="handleButtonClick(() => selectDifficulty('easy'))">😄 Easy</button>
+      <button class="btn" onclick="handleButtonClick(() => selectDifficulty('medium'))">🤔 Medium</button>
+      <button class="btn" onclick="handleButtonClick(() => selectDifficulty('hard'))">😈 Hard</button>
+      <button class="btn back-btn" onclick="handleButtonClick(() => goBackToModeSelection(true))">⬅️ Back</button>
+  </div>
+  <!-- Game Screen View -->
+  <div class="gameArea-container hidden" id="gameScreen">
+      <!-- Updated Scoreboard Structure -->
+      <div class="scoreboard" id="scoreboard">
+        <div class="score-item" id="scoreX"><span>👤 X:</span><span>0</span></div>
+        <div class="score-item" id="scoreDraw"><span>🤝 Draws:</span><span>0</span></div>
+        <div class="score-item" id="scoreO"><span><span id="playerOIcon">👤</span> O:</span><span>0</span></div>
       </div>
-
-      <div id="gameArea"> <!-- No hidden class -->
+      <!-- End Updated Scoreboard -->
+      <div id="gameArea">
         <div class="message" id="message">Player X's turn</div>
         <div class="board" id="board">
-          <!-- Cells -->
           <div class="cell" data-index="0"></div> <div class="cell" data-index="1"></div> <div class="cell" data-index="2"></div>
           <div class="cell" data-index="3"></div> <div class="cell" data-index="4"></div> <div class="cell" data-index="5"></div>
           <div class="cell" data-index="6"></div> <div class="cell" data-index="7"></div> <div class="cell" data-index="8"></div>
         </div>
         <div class="controls">
-          <button class="btn" onclick="goBackToModeSelection()">⬅️ Back</button>
-          <button class="btn" onclick="restartGame(true)">🔄 Restart</button>
+          <button class="btn back-btn" onclick="handleButtonClick(goBackToModeSelection)">⬅️ Change Mode</button>
+          <button class="btn" onclick="handleButtonClick(() => restartGame(true))">🔄 Restart Round</button>
         </div>
       </div>
   </div>
-  <!-- End Game Screen Wrapper -->
-
+  <!-- About Us Section -->
+  <div class="about-section">
+      <a href="#" id="aboutToggle" class="btn" onclick="handleButtonClick(() => { aboutInfo?.classList.toggle('hidden'); }, false); return false;">ℹ️ About Us</a> <!-- Simplified About Us toggle -->
+      <div id="aboutInfo" class="hidden">
+           <!-- Email wrapped in mailto link -->
+           <p>
+              <strong>Gmail:</strong>
+              <a href="mailto:subhamkumarprusty582@gmail.com" style="word-break: break-all;">
+                  subhamkumarprusty582@gmail.com
+              </a>
+          </p>
+          <p>
+              <strong>Instagram:</strong>
+              <a href="https://www.instagram.com/mr.nobita_1x/" target="_blank" rel="noopener noreferrer">
+                  @mr.nobita_1x
+              </a>
+          </p>
+          <!-- Added Website Link -->
+           <p>
+            <strong>Website:</strong>
+            <a href="https://subham-ctrl.github.io/Personal-Website/" target="_blank" rel="noopener noreferrer">
+              https://subham-ctrl.github.io/Personal-Website/
+                
+            </a>
+          </p>
+      </div>
+  </div>
+  <!-- End About Us Section -->
 </div> <!-- End Container -->
-
 <script>
     // --- Get Elements ---
     const introScreen = document.getElementById('introScreen');
@@ -252,315 +350,275 @@
     const brick = document.getElementById('brick');
     const nameInputSection = document.getElementById('nameInputSection');
     const modeSelection = document.getElementById('modeSelection');
-    const gameScreen = document.getElementById('gameScreen'); // Reference the new container
-    const transitionDuration = 400; // Milliseconds, match CSS transition
+    const difficultySelection = document.getElementById('difficultySelection');
+    const gameScreen = document.getElementById('gameScreen');
+    const aboutToggle = document.getElementById('aboutToggle');
+    const aboutInfo = document.getElementById('aboutInfo');
+    const darkModeToggle = document.getElementById('darkModeToggle'); // Slider Toggle
+    // Scoreboard Elements
+    const scoreXElement = document.getElementById('scoreX')?.lastElementChild;
+    const scoreOElement = document.getElementById('scoreO')?.lastElementChild;
+    const scoreDrawElement = document.getElementById('scoreDraw')?.lastElementChild;
+    const playerOIconElement = document.getElementById('playerOIcon');
+    const scoreXContainer = document.getElementById('scoreX');
+    const scoreOContainer = document.getElementById('scoreO');
+
+    const transitionDuration = 500; // Match CSS
 
     // --- Game State Variables ---
     let playerName = 'Player';
-    let playerOName = 'Player O';
+    let playerOName = 'Player O'; // Will be updated if bot mode
     let currentPlayer = 'X';
     let gameBoard = ['', '', '', '', '', '', '', '', ''];
     let gameActive = false;
-    let mode = '';
+    let mode = ''; // 'player' or 'bot'
+    let botDifficulty = 'medium'; // 'easy', 'medium', 'hard'
     let scores = { X: 0, O: 0, Draws: 0 };
     let autoRestartTimeout;
 
-    const winningConditions = [
-      [0,1,2],[3,4,5],[6,7,8],
-      [0,3,6],[1,4,7],[2,5,8],
-      [0,4,8],[2,4,6]
-    ];
+    const winningConditions = [ [0,1,2],[3,4,5],[6,7,8], [0,3,6],[1,4,7],[2,5,8], [0,4,8],[2,4,6] ];
 
-    // --- Intro Logic ---
+    // --- Haptic Feedback Helper ---
+    function triggerVibration(duration = 5) { // Short vibration
+        if (navigator.vibrate) {
+            try {
+                navigator.vibrate(duration);
+            } catch (e) {
+                // console.warn("Vibration failed:", e); // Optional logging
+            }
+        }
+    }
+
+    // --- Button Click Wrapper (for vibration) ---
+    function handleButtonClick(action, vibrate = true) {
+        if (vibrate) {
+            triggerVibration(8); // Slightly longer for buttons
+        }
+        if (typeof action === 'function') {
+            action();
+        }
+    }
+
+    // --- Initialization ---
     window.onload = () => {
-      // Dark mode check
       if (localStorage.getItem('darkMode') === 'enabled') {
           document.body.classList.add('dark');
-          document.querySelector('.dark-mode-btn').textContent = '☀️';
+          if (darkModeToggle) darkModeToggle.checked = true;
       } else {
-          document.querySelector('.dark-mode-btn').textContent = '🌙';
+          document.body.classList.remove('dark');
+          if (darkModeToggle) darkModeToggle.checked = false;
       }
-
-      // Calculate intro duration
-      const textAnimationDuration = (14 * 0.06 + 0.6) * 1000; // ~1.44s
+      const textAnimationDuration = (14 * 0.06 + 0.7) * 1000;
       const minIntroTime = 2500;
       const introVisibleDuration = Math.max(textAnimationDuration + 500, minIntroTime);
-
-      // Start intro fade out
       setTimeout(() => {
-        introScreen.style.opacity = '0';
-        // After fade out, hide intro & show game setup
+        if(introScreen) introScreen.style.opacity = '0';
         setTimeout(() => {
-          introScreen.style.display = 'none';
-          document.body.classList.add('game-ready'); // Enable flex centering & scrolling
-          mainContainer.classList.remove('hidden'); // Show main container
-
-          // Show name input view with animation
-          nameInputSection.classList.remove('hidden'); // Make it display: block/flex
-          requestAnimationFrame(() => { // Wait for display change
-            requestAnimationFrame(() => { // Wait another frame for safety
-                nameInputSection.classList.add('active-view'); // Start transition
-                document.getElementById('playerName').focus(); // Focus input
-            });
-          });
-
-        }, 1000); // Matches CSS opacity transition
+          if(introScreen) introScreen.style.display = 'none';
+          document.body.classList.add('game-ready');
+          if(mainContainer) mainContainer.classList.remove('hidden');
+          switchView(null, nameInputSection);
+          if(document.getElementById('playerName')) document.getElementById('playerName').focus();
+        }, 1000); // Wait for fade out animation
       }, introVisibleDuration);
     };
 
-    // --- View Switching and Game Functions ---
-    function toggleDarkMode() {
-      document.body.classList.toggle('dark');
-      const btn = document.querySelector('.dark-mode-btn');
-      if (document.body.classList.contains('dark')) {
-          btn.textContent = '☀️';
-          localStorage.setItem('darkMode', 'enabled');
-      } else {
-          btn.textContent = '🌙';
-          localStorage.setItem('darkMode', 'disabled');
-      }
+    // --- View Switching ---
+    function switchView(viewToHide, viewToShow) {
+        if (viewToHide) viewToHide.classList.remove('active-view');
+        setTimeout(() => {
+            if (viewToHide) viewToHide.classList.add('hidden');
+            if (viewToShow) {
+                viewToShow.classList.remove('hidden');
+                // Delay adding active class slightly for smoother transition start
+                requestAnimationFrame(() => { setTimeout(() => { viewToShow.classList.add('active-view'); }, 10); });
+            }
+        }, viewToHide ? transitionDuration : 50);
     }
+
 
     function proceedToMode() {
-      playerName = document.getElementById('playerName').value.trim() || 'Player';
-
-      // Start hiding name input view
-      nameInputSection.classList.remove('active-view');
-
-      // After transition, hide it fully & show mode selection view
-      setTimeout(() => {
-        nameInputSection.classList.add('hidden'); // Set display: none
-        modeSelection.classList.remove('hidden'); // Set display: block/flex
-         requestAnimationFrame(() => { // Wait for display
-             requestAnimationFrame(() => { // Wait again
-                modeSelection.classList.add('active-view'); // Start transition
-             });
-         });
-      }, transitionDuration); // Wait for fade out
+      playerName = document.getElementById('playerName')?.value.trim() || 'Player';
+      scores = { X: 0, O: 0, Draws: 0 }; // Reset scores here
+      updateScoreboardDisplay(); // Update display with names/icons
+      switchView(nameInputSection, modeSelection);
     }
+
+    function goBackToNameInput() { switchView(modeSelection, nameInputSection); document.getElementById('playerName')?.focus(); }
 
     function selectMode(selectedMode) {
       mode = selectedMode;
-      playerOName = (mode === 'bot') ? 'Heera Bete' : 'Player O';
+      playerOName = (mode === 'bot') ? 'Heera Bete' : 'Player O'; // Update Bot Name
+      if(playerOIconElement) playerOIconElement.textContent = (mode === 'bot') ? '🤖' : '👤'; // Update Icon
+      updateScoreboardDisplay(); // Update names before switching
 
-      // Start hiding mode selection view
-      modeSelection.classList.remove('active-view');
-
-      // After transition, hide it fully & show game screen view
-      setTimeout(() => {
-        modeSelection.classList.add('hidden');
-        gameScreen.classList.remove('hidden'); // Show the game container
-         requestAnimationFrame(() => { // Wait for display
-             requestAnimationFrame(() => { // Wait again
-                 gameScreen.classList.add('active-view'); // Start transition
-
-                 // Initialize game state AFTER view starts animating in
-                 updateScoreboardDisplay();
-                 restartGame(false); // Start the actual game
-                 gameActive = true;
-                 updateMessage();
-             });
-         });
-      }, transitionDuration); // Wait for fade out
+      if (mode === 'player') { switchView(modeSelection, gameScreen); setTimeout(startGame, 50); }
+      else { switchView(modeSelection, difficultySelection); }
     }
 
-    function goBackToModeSelection() {
-      // Start hiding game screen view
-      gameScreen.classList.remove('active-view');
-      gameActive = false; // Deactivate game logic immediately
-      clearTimeout(autoRestartTimeout); // Stop auto-restart
+    function selectDifficulty(level) { botDifficulty = level; switchView(difficultySelection, gameScreen); setTimeout(startGame, 50); }
 
-      // After transition, hide it fully & show mode selection view
-      setTimeout(() => {
-        gameScreen.classList.add('hidden'); // Hide game container
-        modeSelection.classList.remove('hidden'); // Show mode select
-        requestAnimationFrame(() => { // Wait for display
-            requestAnimationFrame(() => { // Wait again
-                modeSelection.classList.add('active-view'); // Start transition
-            });
-        });
+    function startGame() { updateScoreboardDisplay(); restartGame(false); gameActive = true; }
 
-        // Reset the board state for the next game in this session
-        currentPlayer = 'X';
-        gameBoard = ['', '', '', '', '', '', '', '', ''];
-        cells.forEach(cell => {
-            cell.textContent = '';
-            cell.style.animation = '';
-            cell.classList.remove('disabled', 'X', 'O');
-        });
-        enableBoard();
-        messageElement.textContent = ''; // Clear old message
-
-      }, transitionDuration); // Wait for fade out
+    function goBackToModeSelection(fromDifficulty = false) {
+      gameActive = false; clearTimeout(autoRestartTimeout); if(aboutInfo) aboutInfo.classList.add('hidden');
+      const viewToHide = fromDifficulty ? difficultySelection : gameScreen;
+      switchView(viewToHide, modeSelection);
     }
 
-    // --- Core Game Logic Functions (Unchanged from previous correct version) ---
+    // --- Core Game Logic ---
     function updateScoreboardDisplay() {
-      document.getElementById('playerX').textContent = `${playerName} (X): ${scores.X}`;
-      document.getElementById('playerO').textContent = `${playerOName} (O): ${scores.O}`;
-      document.getElementById('draws').textContent = `Draws: ${scores.Draws}`;
+        // Update scores
+        if (scoreXElement) scoreXElement.textContent = scores.X;
+        if (scoreOElement) scoreOElement.textContent = scores.O;
+        if (scoreDrawElement) scoreDrawElement.textContent = scores.Draws;
+
+        // Update names/icons (handle potential player name changes)
+        const scoreXName = scoreXContainer?.querySelector('span:first-child');
+        const scoreOName = scoreOContainer?.querySelector('span:first-child');
+        // Display player name (limit length for display)
+        const displayPlayerName = playerName.length > 10 ? playerName.substring(0, 8) + '...' : playerName;
+        const displayPlayerOName = playerOName.length > 10 ? playerOName.substring(0, 8) + '...' : playerOName;
+
+        if(scoreXName) scoreXName.innerHTML = `👤 ${displayPlayerName} (X):`;
+        if(scoreOName) scoreOName.innerHTML = `<span id="playerOIcon">${mode === 'bot' ? '🤖' : '👤'}</span> ${displayPlayerOName} (O):`;
+
+        // Update active score highlight
+        updateActiveScoreHighlight();
     }
+
+    function updateActiveScoreHighlight() {
+        scoreXContainer?.classList.toggle('active-score', gameActive && currentPlayer === 'X');
+        scoreOContainer?.classList.toggle('active-score', gameActive && currentPlayer === 'O');
+    }
+
 
     function updateMessage() {
-      if (!gameActive) return;
+      if (!gameActive || !messageElement) return;
       const currentTurnName = (currentPlayer === 'X') ? playerName : playerOName;
       messageElement.textContent = `${currentTurnName}'s turn (${currentPlayer})`;
+      updateActiveScoreHighlight(); // Update highlight when turn changes
     }
 
     function handleCellClick(e) {
       if (!e.target.classList.contains('cell') || !gameActive) return;
+      triggerVibration(); // Haptic feedback for cell tap
       const clickedCell = e.target;
-      const index = parseInt(clickedCell.getAttribute('data-index'));
-      if (gameBoard[index] !== '' || (mode === 'bot' && currentPlayer === 'O')) {
-          return;
-      }
+      const index = parseInt(clickedCell.getAttribute('data-index'), 10); // Added radix 10
+      if (isNaN(index) || gameBoard[index] !== '' || !gameActive || (mode === 'bot' && currentPlayer === 'O')) return; // Added isNaN check
       makeMove(index, currentPlayer);
       if (!gameActive) return;
       if (mode === 'bot' && currentPlayer === 'O' && gameActive) {
-        boardElement.style.pointerEvents = 'none';
-        messageElement.textContent = `${playerOName} is thinking... 🤔`;
-        setTimeout(() => {
-            botMove();
-            if (gameActive) {
-              boardElement.style.pointerEvents = 'auto';
-              updateMessage();
-            }
-        }, 600 + Math.random() * 400);
+        disableBoardInteraction();
+        if(messageElement) messageElement.textContent = `${playerOName} is thinking... 🤔`;
+        let thinkTime = 600 + Math.random() * 400;
+        if (botDifficulty === 'easy') thinkTime *= 0.7; if (botDifficulty === 'hard') thinkTime *= 1.2;
+        setTimeout(() => { botMove(); if (gameActive) { enableBoardInteraction(); updateMessage(); } }, Math.max(thinkTime, 450));
       }
     }
 
     function makeMove(index, player) {
-      if (gameBoard[index] !== '' || !gameActive) return;
+      if (index < 0 || index >= 9 || gameBoard[index] !== '' || !gameActive) return; // Check bounds and state
       gameBoard[index] = player;
       const cell = cells[index];
-      cell.textContent = player;
-      cell.classList.add(player);
-      cell.classList.add('disabled');
-      if (checkResult()) {
-          return;
+      if(cell) {
+          cell.textContent = player; cell.classList.add(player); cell.classList.add('disabled');
+          cell.classList.remove('cell-marked'); void cell.offsetWidth; cell.classList.add('cell-marked');
       }
+      if (checkResult()) return;
       currentPlayer = (currentPlayer === 'X') ? 'O' : 'X';
-      if (mode !== 'bot' || currentPlayer === 'X') {
-          updateMessage();
-      }
+      updateMessage(); // Update message and score highlight here
     }
 
+    // --- MODIFIED checkResult function (Removed showBrick calls) ---
     function checkResult() {
-        let roundWon = false;
-        let winningLine = [];
-        for (let condition of winningConditions) {
-          const [a,b,c] = condition;
-          if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
-            roundWon = true;
-            winningLine = [a, b, c];
-            break;
-          }
-        }
-        if (roundWon) {
-          gameActive = false;
-          animateWinningCells(...winningLine);
-          if (mode === 'bot' && currentPlayer === 'O') {
-            messageElement.textContent = 'Heera Bete Win 🥒';
-          } else {
-            let winnerName = (currentPlayer === 'X') ? playerName : playerOName;
-            messageElement.textContent = `🎉 ${winnerName} Wins!`;
-          }
-          updateScores(currentPlayer);
-          disableBoard();
-          showBrick();
-          clearTimeout(autoRestartTimeout);
-          autoRestartTimeout = setTimeout(() => restartGame(false), 3000);
-          return true;
-        }
-        if (!gameBoard.includes('')) {
-          messageElement.textContent = '🤝 It\'s a Draw!';
-          gameActive = false;
-          updateScores('Draw');
-          disableBoard();
-          showBrick();
-          clearTimeout(autoRestartTimeout);
-          autoRestartTimeout = setTimeout(() => restartGame(false), 3000);
-          return true;
-        }
-        return false;
+      let roundWon = false, winningLine = [];
+      for (let condition of winningConditions) { const [a,b,c] = condition; if (gameBoard[a] && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) { roundWon = true; winningLine = [a, b, c]; break; } }
+      if (roundWon) {
+        gameActive = false; animateWinningCells(...winningLine);
+        let winnerName = (currentPlayer === 'X') ? playerName : playerOName;
+        if(messageElement) messageElement.textContent = (mode === 'bot' && currentPlayer === 'O') ? `Heera Bete (${botDifficulty}) Wins 🥒` : `🎉 ${winnerName} Wins!`;
+        updateScores(currentPlayer); disableBoardInteraction();
+        // showBrick(); // <--- POPUP CALL REMOVED/COMMENTED
+        clearTimeout(autoRestartTimeout);
+        autoRestartTimeout = setTimeout(() => restartGame(false), 2500); // Faster auto-restart
+        updateActiveScoreHighlight(); // Clear active highlight on win
+        return true;
+      }
+      if (!gameBoard.includes('')) {
+        if(messageElement) messageElement.textContent = '🤝 It\'s a Draw!';
+        gameActive = false; updateScores('Draw'); disableBoardInteraction();
+        // showBrick(); // <--- POPUP CALL REMOVED/COMMENTED
+        clearTimeout(autoRestartTimeout);
+        autoRestartTimeout = setTimeout(() => restartGame(false), 2500); // Faster auto-restart
+        updateActiveScoreHighlight(); // Clear active highlight on draw
+        return true;
+      }
+      return false;
     }
+    // --- END OF MODIFIED checkResult function ---
 
     function botMove() {
       if (!gameActive) return;
       let bestMove = getBestBotMove();
-      if (bestMove !== null && gameBoard[bestMove] === '') {
-          makeMove(bestMove, 'O');
-      } else {
-          console.error("AI failed to find a valid move. Picking random available.");
-          let available = [];
-          gameBoard.forEach((val, idx) => { if (val === '') available.push(idx); });
-          if (available.length > 0) {
-               let randomIndex = available[Math.floor(Math.random() * available.length)];
-               makeMove(randomIndex, 'O');
-          } else {
-               checkResult();
-          }
-      }
+      if (bestMove !== null && gameBoard[bestMove] === '') makeMove(bestMove, 'O');
+      else { console.warn("AI move logic failed or returned invalid move. Picking random."); let available = []; gameBoard.forEach((val, idx) => { if (val === '') available.push(idx); }); if (available.length > 0) makeMove(available[Math.floor(Math.random() * available.length)], 'O'); else checkResult(); }
     }
 
-    function getBestBotMove() {
-      for (let c of winningConditions) { const [a,b,i] = c; if (gameBoard[a] === 'O' && gameBoard[b] === 'O' && gameBoard[i] === '') return i; if (gameBoard[a] === 'O' && gameBoard[i] === 'O' && gameBoard[b] === '') return b; if (gameBoard[b] === 'O' && gameBoard[i] === 'O' && gameBoard[a] === '') return a; }
-      for (let c of winningConditions) { const [a,b,i] = c; if (gameBoard[a] === 'X' && gameBoard[b] === 'X' && gameBoard[i] === '') return i; if (gameBoard[a] === 'X' && gameBoard[i] === 'X' && gameBoard[b] === '') return b; if (gameBoard[b] === 'X' && gameBoard[i] === 'X' && gameBoard[a] === '') return a; }
-      if (gameBoard[4] === '') return 4;
-      if (gameBoard[0] === 'X' && gameBoard[8] === '') return 8; if (gameBoard[8] === 'X' && gameBoard[0] === '') return 0; if (gameBoard[2] === 'X' && gameBoard[6] === '') return 6; if (gameBoard[6] === 'X' && gameBoard[2] === '') return 2;
-      const corners = [0, 2, 6, 8].filter(i => gameBoard[i] === ''); if (corners.length > 0) return corners[Math.floor(Math.random() * corners.length)];
-      const sides = [1, 3, 5, 7].filter(i => gameBoard[i] === ''); if (sides.length > 0) return sides[Math.floor(Math.random() * sides.length)];
-      return null;
+    function getBestBotMove() { // (Bot logic unchanged)
+        const getRandomMove = () => { let available = []; gameBoard.forEach((val, idx) => { if (val === '') available.push(idx); }); return available.length > 0 ? available[Math.floor(Math.random() * available.length)] : null; };
+        const findTwoInARow = (player) => { for (let c of winningConditions) { const [a, b, i] = c; if (gameBoard[a] === player && gameBoard[b] === player && gameBoard[i] === '') return i; if (gameBoard[a] === player && gameBoard[i] === player && gameBoard[b] === '') return b; if (gameBoard[b] === player && gameBoard[i] === player && gameBoard[a] === '') return a; } return null; };
+        if (botDifficulty === 'easy') { if (Math.random() < 0.75) { const randomMove = getRandomMove(); if (randomMove !== null) return randomMove; } let move = findTwoInARow('O'); if (move !== null) return move; move = findTwoInARow('X'); if (move !== null) return move; return getRandomMove(); }
+        let move = findTwoInARow('O'); if (move !== null) return move; move = findTwoInARow('X'); if (move !== null) return move; if (gameBoard[4] === '') return 4;
+        if (botDifficulty === 'hard') { if (gameBoard[0] === 'X' && gameBoard[8] === '') return 8; if (gameBoard[8] === 'X' && gameBoard[0] === '') return 0; if (gameBoard[2] === 'X' && gameBoard[6] === '') return 6; if (gameBoard[6] === 'X' && gameBoard[2] === '') return 2; }
+        const corners = [0, 2, 6, 8].filter(i => gameBoard[i] === ''); if (corners.length > 0) return corners[Math.floor(Math.random() * corners.length)];
+        const sides = [1, 3, 5, 7].filter(i => gameBoard[i] === ''); if (sides.length > 0) return sides[Math.floor(Math.random() * sides.length)];
+        return getRandomMove();
     }
 
     function animateWinningCells(a,b,c) {
-      [a,b,c].forEach(i => {
-        cells[i].style.animation = "winnerGlow 0.4s ease-in-out infinite alternate, bounce 0.6s ease-out 1";
-      });
+        [a,b,c].forEach(i => { if(i >= 0 && i < cells.length && cells[i]) cells[i].style.animation = `winnerGlow 0.5s ease-in-out 4 alternate, bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 3`; });
     }
-
-    function disableBoard() {
-      cells.forEach(cell => cell.classList.add('disabled'));
-       boardElement.style.pointerEvents = 'none';
-    }
-
-    function enableBoard() {
-        cells.forEach(cell => { if (gameBoard[cell.getAttribute('data-index')] === '') cell.classList.remove('disabled'); });
-        boardElement.style.pointerEvents = 'auto';
-    }
-
-    function updateScores(winner) {
-      if (winner === 'Draw') scores.Draws++;
-      else if (winner === 'X' || winner === 'O') scores[winner]++;
-      updateScoreboardDisplay();
-    }
-
+    function disableBoardInteraction() { if(boardElement) boardElement.style.pointerEvents = 'none'; }
+    function enableBoardInteraction() { if(boardElement) boardElement.style.pointerEvents = 'auto'; }
+    function updateScores(winner) { if (winner === 'Draw') scores.Draws++; else if (winner === 'X' || winner === 'O') scores[winner]++; updateScoreboardDisplay(); } // Display update happens here
     function restartGame(triggeredByUser = true) {
-       if (triggeredByUser && autoRestartTimeout) clearTimeout(autoRestartTimeout);
-      currentPlayer = 'X';
-      gameBoard = ['', '', '', '', '', '', '', '', ''];
-      gameActive = true;
-      cells.forEach(cell => {
-        cell.textContent = '';
-        cell.style.animation = '';
-        cell.classList.remove('disabled', 'X', 'O');
-      });
-      enableBoard();
-      updateMessage();
+        if (triggeredByUser && autoRestartTimeout) clearTimeout(autoRestartTimeout);
+        currentPlayer = 'X';
+        gameBoard = ['', '', '', '', '', '', '', '', ''];
+        gameActive = true;
+        cells.forEach(cell => {
+            if(cell) {
+                cell.textContent = ''; cell.style.animation = '';
+                cell.classList.remove('disabled', 'X', 'O', 'cell-marked');
+            }
+        });
+        enableBoardInteraction();
+        updateMessage(); // Set initial message and score highlight
     }
 
+    // --- The function to show the brick popup still exists, but isn't called on win/draw anymore ---
     function showBrick() {
-      brick.style.display = 'block';
-      brick.style.animation = 'none';
-      brick.offsetHeight;
-      brick.style.animation = 'floatBrick 2.5s ease forwards';
-      setTimeout(() => { brick.style.display = 'none'; }, 2400);
+        if(brick) {
+            brick.style.display = 'block'; brick.style.animation = 'none';
+            brick.offsetHeight; /* Trigger reflow */ brick.style.animation = 'floatBrick 2.5s cubic-bezier(0.68, -0.6, 0.32, 1.6) forwards';
+            setTimeout(() => { if(brick) brick.style.display = 'none'; }, 2400);
+        }
     }
 
-    // --- Event Listener ---
-    boardElement.addEventListener('click', handleCellClick);
+    // --- Event Listeners ---
+    if(boardElement) boardElement.addEventListener('click', handleCellClick);
+    // About Us toggle handled via inline onclick using handleButtonClick wrapper
+
+    // Dark Mode Slider Listener
+    if (darkModeToggle) {
+        darkModeToggle.addEventListener('change', () => {
+            triggerVibration(5); // Vibrate on toggle change
+            if (darkModeToggle.checked) { document.body.classList.add('dark'); localStorage.setItem('darkMode', 'enabled'); }
+            else { document.body.classList.remove('dark'); localStorage.setItem('darkMode', 'disabled'); }
+        });
+    }
 
 </script>
-
 </body>
 </html>
