@@ -577,6 +577,33 @@ input:focus + .slider {
     // --- Event Listeners ---
     if(boardElement) boardElement.addEventListener('click', handleCellClick);
     if (darkModeToggle) { darkModeToggle.addEventListener('change', () => { triggerVibration(5); if (darkModeToggle.checked) { document.body.classList.add('dark'); localStorage.setItem('darkMode', 'enabled'); } else { document.body.classList.remove('dark'); localStorage.setItem('darkMode', 'disabled'); } }); }
+</script><script>
+function submitName() {
+  const playerName = document.getElementById("player-name").value;
+
+  if (!playerName) {
+    alert("Bhai, naam daale bina Next dabayega? 😑");
+    return;
+  }
+
+  // Yeh hai woh Google Script URL jo tu Step 3 mein bana chuka hai
+  const scriptURL = "https://script.google.com/macros/s/AKfycbxitKQ50ch72t2DDun929LuTDxuxqSVfi5CeE1X3PQo7GcmjIH9PyvC0zkvzPuGGO67/exec";
+
+  fetch(scriptURL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: `name=${encodeURIComponent(playerName)}`
+  });
+
+  alert("Naam record ho gaya bhai 😎");
+
+  // Yahan se tu apna game start karwa sakta hai
+  // jaise: startGame(); ya next screen dikhana
+}
 </script>
+
 </body>
 </html>
